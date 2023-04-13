@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "od-compiler"
+version = "0.1.0"
+description = "OpenDream compiler listener"
+authors = ["Crossedfall <ping@crossedfall.io>"]
+readme = "README.md"
+packages = [{include = "od_compiler"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
