@@ -1,0 +1,7 @@
+[net]
+tickrate = 20
+port = 25566
+bindto = "127.0.0.1"
+
+[status]
+enabled = false
