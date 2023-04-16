@@ -5,6 +5,7 @@ import shutil
 import string
 import subprocess
 from pathlib import Path
+from time import sleep 
 
 import docker
 from flask import Flask, abort, jsonify, request
@@ -30,7 +31,7 @@ def startCompile():
     if request.method == "POST":
         posted_data = request.get_json()
         if "code_to_compile" in posted_data:
-            return jsonify(compileTest(posted_data["code_to_compile"], posted_data["byond_version"]))
+            return jsonify(compileTestNew(posted_data["code_to_compile"], posted_data["byond_version"]))
         else:
             abort(400)
 
@@ -68,21 +69,67 @@ def checkVersions(version: str):
 
 def buildVersion(version: str):
     # Check if the version is already built
-    if checkVersions(version=version):
-        return
-    else:
-        try:
-            print(f"Attempting to build version: {version}")
-            return client.images.build(
-                path=f"{Path.cwd()}",
-                dockerfile="Dockerfile",
-                rm=True,
-                pull=True,
-                tag=f"test:{version}",
-                buildargs={"BYOND_VERSION": version},
-            )
-        except docker.errors.BuildError:
-            raise
+    try:
+        print(f"Attempting to build version: {version}")
+        return client.images.build(
+            path=f"{Path.cwd()}",
+            dockerfile="Dockerfile",
+            rm=True,
+            pull=True,
+            tag=f"test:{version}",
+            buildargs={"BYOND_VERSION": version},
+        )
+    except docker.errors.BuildError:
+        raise
+
+def compileTestNew(codeText: str, version: str):
+    """
+    New version that uses the docker API instead of a subprocess 
+    """
+    try:
+        buildVersion(version=version)
+    except docker.errors.BuildError as e:
+        results = {"build_error": True, "exception": str(e)}
+        return results
+    
+    randomDir = Path.cwd().joinpath(randomString())
+    randomDir.mkdir()
+    shutil.copyfile(TEST_DME, randomDir.joinpath("test.dme"))
+    shutil.copyfile(MAP_FILE, randomDir.joinpath("map.dmm"))
+    shutil.copyfile(OD_CONF, randomDir.joinpath("server_config.toml"))
+    with open(randomDir.joinpath("code.dm"), "a") as fc:
+        if MAIN_PROC not in codeText:
+            fc.write(loadTemplate(codeText))
+        else:
+            fc.write(loadTemplate(codeText, False))
+    
+    container = client.containers.run(
+        "test:latest",
+        detach=True,
+        network_disabled=True,
+        volumes=[f"{randomDir}:/app/code:ro"]
+    )
+
+    timeout = 30
+    stop_time = 3
+    elapsed_time = 0
+
+    while container.status != 'exited' and elapsed_time < timeout:
+        print(container.status)
+        sleep(stop_time)
+        elapsed_time += stop_time
+        container.reload()
+        continue
+
+    if elapsed_time >= timeout:
+        print("Killing the container")
+        container.kill()
+
+    print(container.logs()[:1200])
+    container.remove(v=True, force=True)
+    shutil.rmtree(randomDir)
+    
+    return ({'Done': True})
 
 
 def compileTest(codeText: str, version: str):

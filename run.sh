@@ -1,4 +1,8 @@
 #!/bin/bash
 cp /app/code/* .
+echo "---Start Compiler---"
 DMCompiler test.dme
-OpenDreamServer --config-file server_config.toml --cvar opendream.json_path=/app/test.json | cat
+echo "---End Compiler---"
+echo "---Start Server---"
+OpenDreamServer --config-file server_config.toml --cvar opendream.json_path=/app/test.json
+echo "---End Server---"

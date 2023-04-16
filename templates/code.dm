@@ -2,7 +2,7 @@
 
 $proc
 	$code
-/world/New()
+/TEST/New()
 	world.log << "---------------"
 	main()
 	shutdown()
