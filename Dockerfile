@@ -12,7 +12,6 @@ FROM builder
 
 WORKDIR /app
 
-COPY ./template/ .
 COPY run.sh .
 
 RUN useradd odcompile && \

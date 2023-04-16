@@ -8,6 +8,8 @@ packages = [{include = "od_compiler"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
+flask = "^2.2.3"
+docker = "^6.0.1"
 
 
 [build-system]
