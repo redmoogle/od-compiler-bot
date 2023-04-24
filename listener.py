@@ -1,14 +1,14 @@
 import platform
 import random
-import re
 import shutil
 import string
-import subprocess
 from pathlib import Path
 from time import sleep 
 
 import docker
+from git import Repo
 from flask import Flask, abort, jsonify, request
+
 
 app = Flask(__name__)
 client = docker.from_env()
@@ -23,7 +23,9 @@ MAP_FILE = Path.cwd().joinpath("templates/map.dmm")
 OD_CONF = Path.cwd().joinpath("templates/server_config.toml")
 
 template = None
-test_killed = False
+
+repo = Repo(Path.cwd())
+sms = repo.submodules
 
 
 @app.route("/compile", methods=["POST"])
@@ -31,7 +33,7 @@ def startCompile():
     if request.method == "POST":
         posted_data = request.get_json()
         if "code_to_compile" in posted_data:
-            return jsonify(compileTestNew(posted_data["code_to_compile"], posted_data["byond_version"]))
+            return jsonify(compileTestNew(posted_data["code_to_compile"]))
         else:
             abort(400)
 
@@ -66,42 +68,50 @@ def checkVersions(version: str):
 
     return False
 
+def updateSubmodules():
+    print(f"Updating submodules")
+    for submodule in repo.submodules:
+        submodule.update(init=True)
 
-def buildVersion(version: str):
+def updateBuild():
     # Check if the version is already built
     try:
-        print(f"Attempting to build version: {version}")
+        updateSubmodules()
+        print(f"Attempting build")
         return client.images.build(
             path=f"{Path.cwd()}",
             dockerfile="Dockerfile",
             rm=True,
             pull=True,
-            tag=f"test:{version}",
-            buildargs={"BYOND_VERSION": version},
+            tag=f"test:latest"
         )
     except docker.errors.BuildError:
         raise
 
-def compileTestNew(codeText: str, version: str):
-    """
-    New version that uses the docker API instead of a subprocess 
-    """
-    try:
-        buildVersion(version=version)
-    except docker.errors.BuildError as e:
-        results = {"build_error": True, "exception": str(e)}
-        return results
-    
-    randomDir = Path.cwd().joinpath(randomString())
-    randomDir.mkdir()
-    shutil.copyfile(TEST_DME, randomDir.joinpath("test.dme"))
-    shutil.copyfile(MAP_FILE, randomDir.joinpath("map.dmm"))
-    shutil.copyfile(OD_CONF, randomDir.joinpath("server_config.toml"))
-    with open(randomDir.joinpath("code.dm"), "a") as fc:
+def stageBuild(codeText: str, dir: Path):
+    dir.mkdir()
+    shutil.copyfile(TEST_DME, dir.joinpath("test.dme"))
+    shutil.copyfile(MAP_FILE, dir.joinpath("map.dmm"))
+    shutil.copyfile(OD_CONF, dir.joinpath("server_config.toml"))
+    with open(dir.joinpath("code.dm"), "a") as fc:
         if MAIN_PROC not in codeText:
             fc.write(loadTemplate(codeText))
         else:
             fc.write(loadTemplate(codeText, False))
+
+
+def compileTestNew(codeText: str):
+    """
+    New version that uses the docker API instead of a subprocess 
+    """
+    try:
+        updateBuild()
+    except docker.errors.BuildError as e:
+        results = {"build_error": True, "exception": str(e)}
+        return results
+
+    randomDir = Path.cwd().joinpath(randomString())
+    stageBuild(codeText=codeText, dir=randomDir)
     
     container = client.containers.run(
         "test:latest",
@@ -113,6 +123,7 @@ def compileTestNew(codeText: str, version: str):
     timeout = 30
     stop_time = 3
     elapsed_time = 0
+    test_killed = False
 
     while container.status != 'exited' and elapsed_time < timeout:
         print(container.status)
@@ -124,99 +135,16 @@ def compileTestNew(codeText: str, version: str):
     if elapsed_time >= timeout:
         print("Killing the container")
         container.kill()
-
-    print(container.logs()[:1200])
-    container.remove(v=True, force=True)
-    shutil.rmtree(randomDir)
-    
-    return ({'Done': True})
-
-
-def compileTest(codeText: str, version: str):
-    try:
-        buildVersion(version=version)
-    except docker.errors.BuildError as e:
-        results = {"build_error": True, "exception": str(e)}
-        return results
-
-    randomDir = Path.cwd().joinpath(randomString())
-    randomDir.mkdir()
-    shutil.copyfile(TEST_DME, randomDir.joinpath("test.dme"))
-    shutil.copyfile(MAP_FILE, randomDir.joinpath("map.dmm"))
-    shutil.copyfile(OD_CONF, randomDir.joinpath("server_config.toml"))
-    with open(randomDir.joinpath("code.dm"), "a") as fc:
-        if MAIN_PROC not in codeText:
-            fc.write(loadTemplate(codeText))
-        else:
-            fc.write(loadTemplate(codeText, False))
-    if HOST_OS == "Windows":
-        # To get cleaner outputs, we run docker as a subprocess rather than through the API
-        proc = subprocess.Popen(
-            [
-                "docker",
-                "run",
-                "--name",
-                f"{randomDir.name}",
-                "--rm",
-                "--network",
-                "none",
-                "-v",
-                f"{randomDir}:/app/code:ro",
-                f"test:{version}",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    else:
-        # Expects the linux user to be running docker locally, not as root
-        proc = subprocess.Popen(
-            [
-                f"{Path.home()}/bin/docker",
-                "run",
-                "--name",
-                f"{randomDir.name}",
-                "--rm",
-                "--network",
-                "none",
-                "-v",
-                f"{randomDir}:/app/code:ro",
-                f"test:{version}",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    try:
-        compile_log, run_log = proc.communicate(
-            timeout=30
-        )  # A bit hacky, but provides exceptionally clean results. The main output will be captured as the compile_log while the "error" output is captured as run_log
-        test_killed = False
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        if HOST_OS == "Windows":
-            subprocess.run(["docker", "stop", f"{randomDir.name}"], capture_output=True)
-        else:
-            subprocess.run([f"{Path.home()}/bin/docker", "stop", f"{randomDir.name}"], capture_output=True)
-        compile_log, run_log = proc.communicate()
         test_killed = True
 
-    compile_log = compile_log.decode("utf-8")
-    run_log = run_log.decode("utf-8")
-    run_log = re.sub(
-        r"The BYOND hub reports that port \d* is not reachable.", "", run_log
-    )  # remove the network error message
-    compile_log = (compile_log[:1200] + "...") if len(compile_log) > 1200 else compile_log
-    run_log = (run_log[:1200] + "...") if len(run_log) > 1200 else run_log
-
+    logs = container.logs().decode("utf-8")
+    container.remove(v=True, force=True)
     shutil.rmtree(randomDir)
 
-    if f"Unable to find image 'test:{version}' locally" in run_log:
-        results = {"build_error": True, "exception": run_log}
-    else:
-        results = {"compile_log": compile_log, "run_log": run_log, "timeout": test_killed}
+    results = {"logs": logs, "timeout": test_killed}
 
     print(results)
     return results
-
 
 if __name__ == "__main__":
     app.run(host=HOST, port=PORT)
