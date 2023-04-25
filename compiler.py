@@ -29,7 +29,8 @@ CODE_FILE = Path.cwd().joinpath("templates/code.dm")
 TEST_DME = Path.cwd().joinpath("templates/test.dme")
 MAP_FILE = Path.cwd().joinpath("templates/map.dmm")
 OD_CONF = Path.cwd().joinpath("templates/server_config.toml")
-REPO = Repo(Path.cwd())
+OD_REPO_PATH = Path.cwd().joinpath("OpenDream")
+
 
 client = docker.from_env()
 template = None
@@ -73,10 +74,19 @@ def randomString(stringLength=24):
     return "".join(random.choice(letters) for i in range(stringLength))
 
 
+def cloneOD():
+    if Path.exists(OD_REPO_PATH):
+        return Repo(OD_REPO_PATH)
+    
+    compile_logger.info("Cloning the OpenDream repo")
+    return Repo.clone_from(url='https://github.com/OpenDreamProject/OpenDream.git', to_path=OD_REPO_PATH, multi_options=['--depth 1'])
+
+
 def updateSubmodules():
-    compile_logger.info(f"Updating submodules...")
-    for submodule in REPO.submodules:
-        submodule.update(init=True,to_latest_revision=True,recursive=True)
+    od_repo = cloneOD()
+
+    for submodule in od_repo.submodules:
+        submodule.update(init=True,recursive=True)
         compile_logger.info(f"Updated {submodule.name} to {submodule.parent_commit}")
 
 
@@ -90,6 +100,7 @@ def updateBuild():
             dockerfile="Dockerfile",
             rm=True,
             pull=True,
+            squash=True,
             tag=f"test:latest"
         )
     except docker.errors.BuildError:
@@ -179,4 +190,6 @@ def compileTest(codeText: str):
     return results
 
 if __name__ == "__main__":
-    print("Run me with 'gunicorn wsgi:app'")
+    app = create_app()
+    compile_logger.setLevel(logging.INFO)
+    app.run(host=HOST, port=PORT)
