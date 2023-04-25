@@ -38,11 +38,8 @@ def create_app(logger_override=None):
     app = Flask(__name__)
 
     if logger_override:
-        app.logger.handlers = logger_override.handlers
-        app.logger.setLevel(logger_override.level)
         compile_logger.setLevel(logger_override.level)
         
-
     app.register_blueprint(compile)
 
     return app
@@ -77,9 +74,10 @@ def randomString(stringLength=24):
 
 
 def updateSubmodules():
-    compile_logger.info(f"Updating submodules")
+    compile_logger.info(f"Updating submodules...")
     for submodule in REPO.submodules:
-        submodule.update(init=True)
+        submodule.update(init=True,to_latest_revision=True,recursive=True)
+        compile_logger.info(f"Updated {submodule.name} to {submodule.parent_commit}")
 
 
 def updateBuild():
