@@ -2,16 +2,24 @@ import platform
 import random
 import shutil
 import string
+import re
+import logging
 from pathlib import Path
 from time import sleep 
 
 import docker
 from git import Repo
-from flask import Flask, abort, jsonify, request
+from flask import Flask, abort, jsonify, request, Blueprint
 
+compile = Blueprint('compile', __name__, url_prefix='/compile')
 
-app = Flask(__name__)
-client = docker.from_env()
+logging.basicConfig(
+    level=logging.WARNING,
+    format="[COMPILER] [%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+compile_logger = logging.getLogger('compiler')
+
 
 HOST = "127.0.0.1"
 PORT = 5000
@@ -21,20 +29,32 @@ CODE_FILE = Path.cwd().joinpath("templates/code.dm")
 TEST_DME = Path.cwd().joinpath("templates/test.dme")
 MAP_FILE = Path.cwd().joinpath("templates/map.dmm")
 OD_CONF = Path.cwd().joinpath("templates/server_config.toml")
+REPO = Repo(Path.cwd())
 
+client = docker.from_env()
 template = None
 
-repo = Repo(Path.cwd())
-sms = repo.submodules
+def create_app(logger_override=None):
+    app = Flask(__name__)
 
+    if logger_override:
+        app.logger.handlers = logger_override.handlers
+        app.logger.setLevel(logger_override.level)
+        compile_logger.setLevel(logger_override.level)
+        
 
-@app.route("/compile", methods=["POST"])
+    app.register_blueprint(compile)
+
+    return app
+
+@compile.route("/", methods=["POST"])
 def startCompile():
     if request.method == "POST":
         posted_data = request.get_json()
         if "code_to_compile" in posted_data:
-            return jsonify(compileTestNew(posted_data["code_to_compile"]))
+            return jsonify(compileTest(posted_data["code_to_compile"]))
         else:
+            compile_logger.warning(f"Bad request recieved:\n\n{request.get_json()}")
             abort(400)
 
 
@@ -56,28 +76,17 @@ def randomString(stringLength=24):
     return "".join(random.choice(letters) for i in range(stringLength))
 
 
-def checkVersions(version: str):
-    try:
-        image_list = client.images.list(name="test")
-    except IndexError:
-        return False
-
-    for image in image_list:
-        if f"test:{version}" in image.tags:
-            return True
-
-    return False
-
 def updateSubmodules():
-    print(f"Updating submodules")
-    for submodule in repo.submodules:
+    compile_logger.info(f"Updating submodules")
+    for submodule in REPO.submodules:
         submodule.update(init=True)
+
 
 def updateBuild():
     # Check if the version is already built
     try:
         updateSubmodules()
-        print(f"Attempting build")
+        compile_logger.info(f"Attempting build")
         return client.images.build(
             path=f"{Path.cwd()}",
             dockerfile="Dockerfile",
@@ -87,6 +96,7 @@ def updateBuild():
         )
     except docker.errors.BuildError:
         raise
+
 
 def stageBuild(codeText: str, dir: Path):
     dir.mkdir()
@@ -99,8 +109,26 @@ def stageBuild(codeText: str, dir: Path):
         else:
             fc.write(loadTemplate(codeText, False))
 
+def parseLogs(logs: str) -> dict:
+    '''
+    Why does this work?
+    '''
+    logs_regex = re.compile(r'---Start Compiler---(.+?)---End Compiler---.*---Start Server---(.+?)---End Server---', re.MULTILINE|re.DOTALL)
+    parsed = {}
 
-def compileTestNew(codeText: str):
+    matches = logs_regex.search(logs)
+    
+    if matches is None or len(matches.groups()) != 2:
+        parsed['error'] = "Bad output"
+        return parsed
+
+    parsed['compiler'] = matches.group(1)
+    parsed['server'] = matches.group(2)
+
+    return parsed
+
+
+def compileTest(codeText: str):
     """
     New version that uses the docker API instead of a subprocess 
     """
@@ -113,6 +141,7 @@ def compileTestNew(codeText: str):
     randomDir = Path.cwd().joinpath(randomString())
     stageBuild(codeText=codeText, dir=randomDir)
     
+    compile_logger.info("Starting run...")
     container = client.containers.run(
         "test:latest",
         detach=True,
@@ -126,25 +155,30 @@ def compileTestNew(codeText: str):
     test_killed = False
 
     while container.status != 'exited' and elapsed_time < timeout:
-        print(container.status)
         sleep(stop_time)
         elapsed_time += stop_time
         container.reload()
         continue
 
     if elapsed_time >= timeout:
-        print("Killing the container")
+        compile_logger.warning(f"Killing the container after {elapsed_time} seconds!")
         container.kill()
         test_killed = True
 
     logs = container.logs().decode("utf-8")
+    parsed_logs = parseLogs(logs=logs)
     container.remove(v=True, force=True)
     shutil.rmtree(randomDir)
+    compile_logger.info(f"Run complete")
 
-    results = {"logs": logs, "timeout": test_killed}
+    if "error" in parsed_logs.keys():
+        results = {"error": 'Invalid output. Please check logs.', "timeout": test_killed}
+        compile_logger.warning(f"Failed to parse the log output.\n----------------\n{logs}")
+        return results
 
-    print(results)
+    results = {"compiler": parsed_logs['compiler'], "server": parsed_logs['server'], "timeout": test_killed}
+    compile_logger.debug(f"Run completed. Returning results:\n{results}")
     return results
 
 if __name__ == "__main__":
-    app.run(host=HOST, port=PORT)
+    print("Run me with 'gunicorn wsgi:app'")
