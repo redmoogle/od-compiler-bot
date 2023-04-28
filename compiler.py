@@ -11,7 +11,7 @@ import docker
 from git import Repo
 from flask import Flask, abort, jsonify, request, Blueprint
 
-compile = Blueprint('compile', __name__, url_prefix='/compile')
+compile = Blueprint('compile', __name__, url_prefix='/')
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -45,14 +45,14 @@ def create_app(logger_override=None):
 
     return app
 
-@compile.route("/", methods=["POST"])
+@compile.route("/compile", methods=["POST"])
 def startCompile():
     if request.method == "POST":
         posted_data = request.get_json()
         if "code_to_compile" in posted_data:
             return jsonify(compileTest(posted_data["code_to_compile"]))
         else:
-            compile_logger.warning(f"Bad request recieved:\n\n{request.get_json()}")
+            compile_logger.warning(f"Bad request recieved:\n{request.get_json()}")
             abort(400)
 
 
@@ -74,33 +74,42 @@ def randomString(stringLength=24):
     return "".join(random.choice(letters) for i in range(stringLength))
 
 
-def cloneOD():
+def updateOD():
     if Path.exists(OD_REPO_PATH):
-        return Repo(OD_REPO_PATH)
-    
-    compile_logger.info("Cloning the OpenDream repo")
-    return Repo.clone_from(url='https://github.com/OpenDreamProject/OpenDream.git', to_path=OD_REPO_PATH, multi_options=['--depth 1'])
+        od = Repo(OD_REPO_PATH)     
+        od.remote().fetch()
+        od.head.reset(commit="origin/master",working_tree=True)
+        compile_logger.info(f"The OpenDream repo is at: {od.head.commit.hexsha}")
+    else:
+        compile_logger.info("Repo not found. Cloning from GitHub.")
+        od = Repo.clone_from(
+            url='https://github.com/OpenDreamProject/OpenDream.git',
+            to_path=OD_REPO_PATH,
+            multi_options=['--depth 1']
+        )
+
+    updateSubmodules(od_repo=od)
 
 
-def updateSubmodules():
-    od_repo = cloneOD()
+def updateSubmodules(od_repo:Repo):
 
     for submodule in od_repo.submodules:
         submodule.update(init=True,recursive=True)
-        compile_logger.info(f"Updated {submodule.name} to {submodule.parent_commit}")
+        compile_logger.info(f"{submodule.name} is at {submodule.hexsha}")
 
 
 def updateBuild():
     # Check if the version is already built
     try:
-        updateSubmodules()
+        updateOD()
         compile_logger.info(f"Attempting build")
-        return client.images.build(
+        client.images.build(
             path=f"{Path.cwd()}",
             dockerfile="Dockerfile",
-            rm=True,
+            forcerm=True,
             pull=True,
             squash=True,
+            encoding="gzip",
             tag=f"test:latest"
         )
     except docker.errors.BuildError:
@@ -119,9 +128,6 @@ def stageBuild(codeText: str, dir: Path):
             fc.write(loadTemplate(codeText, False))
 
 def parseLogs(logs: str) -> dict:
-    '''
-    Why does this work?
-    '''
     logs_regex = re.compile(r'---Start Compiler---(.+?)---End Compiler---.*---Start Server---(.+?)---End Server---', re.MULTILINE|re.DOTALL)
     parsed = {}
 
@@ -182,7 +188,7 @@ def compileTest(codeText: str):
 
     if "error" in parsed_logs.keys():
         results = {"error": 'Invalid output. Please check logs.', "timeout": test_killed}
-        compile_logger.warning(f"Failed to parse the log output.\n----------------\n{logs}")
+        compile_logger.warning(f"Failed to parse the log output:\n{logs}")
         return results
 
     results = {"compiler": parsed_logs['compiler'], "server": parsed_logs['server'], "timeout": test_killed}
