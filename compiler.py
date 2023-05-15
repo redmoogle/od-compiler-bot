@@ -35,7 +35,7 @@ OD_REPO_PATH = Path.cwd().joinpath("OpenDream")
 client = docker.from_env()
 template = None
 
-def create_app(logger_override=None):
+def create_app(logger_override=None) -> Flask:
     app = Flask(__name__)
 
     if logger_override:
@@ -46,7 +46,7 @@ def create_app(logger_override=None):
     return app
 
 @compile.route("/compile", methods=["POST"])
-def startCompile():
+def startCompile() -> Flask.response_class:
     if request.method == "POST":
         posted_data = request.get_json()
         if "code_to_compile" in posted_data:
@@ -56,7 +56,7 @@ def startCompile():
             abort(400)
 
 
-def loadTemplate(line: str, includeProc=True):
+def loadTemplate(line: str, includeProc=True) -> string:
     with open(CODE_FILE) as filein:
         template = string.Template(filein.read())
 
@@ -69,12 +69,12 @@ def loadTemplate(line: str, includeProc=True):
     return template.substitute(d)
 
 
-def randomString(stringLength=24):
+def randomString(stringLength=24) -> string:
     letters = string.ascii_lowercase
     return "".join(random.choice(letters) for i in range(stringLength))
 
 
-def updateOD():
+def updateOD() -> None:
     if Path.exists(OD_REPO_PATH):
         od = Repo(OD_REPO_PATH)     
         od.remote().fetch()
@@ -87,18 +87,19 @@ def updateOD():
             to_path=OD_REPO_PATH,
             multi_options=['--depth 1']
         )
+        compile_logger.info(f"The OpenDream repo is at: {od.head.commit.hexsha}")
 
     updateSubmodules(od_repo=od)
 
 
-def updateSubmodules(od_repo:Repo):
+def updateSubmodules(od_repo:Repo) -> None:
 
     for submodule in od_repo.submodules:
         submodule.update(init=True,recursive=True)
         compile_logger.info(f"{submodule.name} is at {submodule.hexsha}")
 
 
-def updateBuild():
+def updateBuild() -> None:
     # Check if the version is already built
     try:
         updateOD()
@@ -108,7 +109,6 @@ def updateBuild():
             dockerfile="Dockerfile",
             forcerm=True,
             pull=True,
-            squash=True,
             encoding="gzip",
             tag=f"test:latest"
         )
@@ -116,7 +116,7 @@ def updateBuild():
         raise
 
 
-def stageBuild(codeText: str, dir: Path):
+def stageBuild(codeText: str, dir: Path) -> None:
     dir.mkdir()
     shutil.copyfile(TEST_DME, dir.joinpath("test.dme"))
     shutil.copyfile(MAP_FILE, dir.joinpath("map.dmm"))
@@ -127,7 +127,7 @@ def stageBuild(codeText: str, dir: Path):
         else:
             fc.write(loadTemplate(codeText, False))
 
-def parseLogs(logs: str) -> dict:
+def splitLogs(logs: str) -> dict:
     logs_regex = re.compile(r'---Start Compiler---(.+?)---End Compiler---.*---Start Server---(.+?)---End Server---', re.MULTILINE|re.DOTALL)
     parsed = {}
 
@@ -143,7 +143,7 @@ def parseLogs(logs: str) -> dict:
     return parsed
 
 
-def compileTest(codeText: str):
+def compileTest(codeText: str) -> dict:
     """
     New version that uses the docker API instead of a subprocess 
     """
@@ -181,7 +181,7 @@ def compileTest(codeText: str):
         test_killed = True
 
     logs = container.logs().decode("utf-8")
-    parsed_logs = parseLogs(logs=logs)
+    parsed_logs = splitLogs(logs=logs)
     container.remove(v=True, force=True)
     shutil.rmtree(randomDir)
     compile_logger.info(f"Run complete")
