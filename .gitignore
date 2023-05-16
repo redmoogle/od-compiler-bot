@@ -154,6 +154,10 @@ cython_debug/
 
 # OpenDream
 OpenDream
+runs/
+
+# Historic runs
+
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can

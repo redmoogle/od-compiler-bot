@@ -5,6 +5,7 @@ import string
 import re
 import logging
 from pathlib import Path
+from os.path import getctime
 from time import sleep 
 
 import docker
@@ -30,6 +31,7 @@ TEST_DME = Path.cwd().joinpath("templates/test.dme")
 MAP_FILE = Path.cwd().joinpath("templates/map.dmm")
 OD_CONF = Path.cwd().joinpath("templates/server_config.toml")
 OD_REPO_PATH = Path.cwd().joinpath("OpenDream")
+HISTORIC_RUNS = 5
 
 
 client = docker.from_env()
@@ -54,6 +56,19 @@ def startCompile() -> Flask.response_class:
         else:
             compile_logger.warning(f"Bad request recieved:\n{request.get_json()}")
             abort(400)
+
+def cleanOldRuns(num_to_keep:int = 5) -> None:
+    '''
+    Clean up the runs directory
+    '''
+    run_dir = Path.cwd().joinpath("runs")
+    runs = [x for x in run_dir.iterdir() if x.is_dir()]
+    runs.sort(key=getctime)
+    
+    while len(runs) > num_to_keep:
+        compile_logger.info(f"Cleanup deleting: {runs[0]}")
+        shutil.rmtree(runs.pop(0))
+
 
 
 def loadTemplate(line: str, includeProc=True) -> string:
@@ -117,7 +132,7 @@ def updateBuild() -> None:
 
 
 def stageBuild(codeText: str, dir: Path) -> None:
-    dir.mkdir()
+    dir.mkdir(parents=True)
     shutil.copyfile(TEST_DME, dir.joinpath("test.dme"))
     shutil.copyfile(MAP_FILE, dir.joinpath("map.dmm"))
     shutil.copyfile(OD_CONF, dir.joinpath("server_config.toml"))
@@ -153,7 +168,7 @@ def compileTest(codeText: str) -> dict:
         results = {"build_error": True, "exception": str(e)}
         return results
 
-    randomDir = Path.cwd().joinpath(randomString())
+    randomDir = Path.cwd().joinpath(f"runs/{randomString()}")
     stageBuild(codeText=codeText, dir=randomDir)
     
     compile_logger.info("Starting run...")
@@ -183,7 +198,7 @@ def compileTest(codeText: str) -> dict:
     logs = container.logs().decode("utf-8")
     parsed_logs = splitLogs(logs=logs)
     container.remove(v=True, force=True)
-    shutil.rmtree(randomDir)
+    cleanOldRuns(HISTORIC_RUNS)
     compile_logger.info(f"Run complete")
 
     if "error" in parsed_logs.keys():
