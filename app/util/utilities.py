@@ -16,7 +16,9 @@ OD_CONF = Path.cwd().joinpath("templates/server_config.toml")
 
 def cleanOldRuns(num_to_keep: int = 5) -> None:
     """
-    Clean up the runs directory
+    Remove the oldest runs, keeping the n most recent runs.
+
+    num_to_keep: Number of historic runs that should be maintained
     """
     run_dir = Path.cwd().joinpath("runs")
     runs = [x for x in run_dir.iterdir() if x.is_dir()]
@@ -28,11 +30,20 @@ def cleanOldRuns(num_to_keep: int = 5) -> None:
 
 
 def randomString(stringLength=24) -> string:
+    """
+    Returns a random string containing 'stringLength' characters
+    """
     letters = string.ascii_lowercase
     return "".join(random.choice(letters) for i in range(stringLength))
 
 
 def splitLogs(logs: str) -> dict:
+    """
+    Split the container logs into compiler and server logs.
+    Returns a dictionary containing 'compiler' and 'server' logs.
+
+    logs: Docker container log output to be parsed
+    """
     logs_regex = re.compile(
         r"---Start Compiler---(.+?)---End Compiler---.*---Start Server---(.+?)---End Server---",
         re.MULTILINE | re.DOTALL,
@@ -58,6 +69,13 @@ def splitLogs(logs: str) -> dict:
 
 
 def loadTemplate(line: str, includeProc=True) -> string:
+    """
+    Replaces the placeholder lines within the template file with the provided run-code.
+    Returns a template string which can be written to a run file.
+
+    line: Code to be included
+    includeProc: If True, a 'MAIN_PROC' will be injected into the template
+    """
     with open(CODE_FILE) as filein:
         template = string.Template(filein.read())
 
@@ -71,6 +89,12 @@ def loadTemplate(line: str, includeProc=True) -> string:
 
 
 def stageBuild(codeText: str, dir: Path) -> None:
+    """
+    Create a directory for the current run and copy over the needed files. Creates the run file containing provided arbitrary code.
+
+    codeText: Arbitrary code to be loaded into a template file
+    dir: Run directory that'll house all of the needed files
+    """
     dir.mkdir(parents=True)
     shutil.copyfile(TEST_DME, dir.joinpath("test.dme"))
     shutil.copyfile(MAP_FILE, dir.joinpath("map.dmm"))

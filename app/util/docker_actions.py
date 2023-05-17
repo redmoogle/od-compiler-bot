@@ -13,24 +13,37 @@ from app.util.utilities import stageBuild
 client = docker.from_env()
 
 
-def updateBuild() -> None:
-    # Check if the version is already built
+def updateBuildImage() -> None:
+    """
+    Update OpenDream and then use Docker's build context to see if we need to build a new image.
+    """
     try:
         updateOD()
-        compile_logger.info("Attempting build")
+        compile_logger.info("Building the docker image...")
         client.images.build(
-            path=f"{Path.cwd()}", dockerfile="Dockerfile", forcerm=True, pull=True, encoding="gzip", tag="test:latest"
+            path=f"{Path.cwd()}",
+            dockerfile="Dockerfile",
+            forcerm=True,
+            pull=True,
+            encoding="gzip",
+            tag="od-compiler:latest",
         )
     except docker.errors.BuildError:
         raise
 
 
-def compileTest(codeText: str) -> dict:
+def compileOD(codeText: str, timeout: int = 30) -> dict:
     """
-    New version that uses the docker API instead of a subprocess
+    Create an OpenDream docker container to compile and run arbitrary code.
+    Returns A dictionary containing the compiler and server logs.
+
+    The docker container will not have networking and will self-destruct after `timeout` seconds.
+
+    codeText: Arbitrary code to be compiled & Ran
+    timeout: Maximum duration a container is allowed to run for
     """
     try:
-        updateBuild()
+        updateBuildImage()
     except docker.errors.BuildError as e:
         results = {"build_error": True, "exception": str(e)}
         return results
@@ -40,10 +53,12 @@ def compileTest(codeText: str) -> dict:
 
     compile_logger.info("Starting run...")
     container = client.containers.run(
-        "test:latest", detach=True, network_disabled=True, volumes=[f"{randomDir}:/app/code:ro"]
+        image="od-compiler:latest",
+        detach=True,
+        network_disabled=True,
+        volumes=[f"{randomDir}:/app/code:ro"],
     )
 
-    timeout = 30
     stop_time = 3
     elapsed_time = 0
     test_killed = False
@@ -59,11 +74,12 @@ def compileTest(codeText: str) -> dict:
         container.kill()
         test_killed = True
 
+    # Container logs are byte encoded
     logs = container.logs().decode("utf-8")
     parsed_logs = splitLogs(logs=logs)
     container.remove(v=True, force=True)
-    cleanOldRuns(5)
-    compile_logger.info("Run complete")
+    cleanOldRuns()
+    compile_logger.info("Run complete!")
 
     if "error" in parsed_logs.keys():
         results = {"error": "Invalid output. Please check logs.", "timeout": test_killed}
