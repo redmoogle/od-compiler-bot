@@ -12,7 +12,7 @@ FROM builder
 
 WORKDIR /app
 
-COPY run.sh .
+COPY docker/run.sh .
 
 RUN useradd odcompile && \
     chown -R odcompile: /app

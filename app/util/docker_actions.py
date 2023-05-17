@@ -2,7 +2,6 @@ from pathlib import Path
 from time import sleep
 
 import docker
-
 from app.util.compiler_logger import compile_logger
 from app.util.git_actions import updateOD
 from app.util.utilities import cleanOldRuns
@@ -22,7 +21,7 @@ def updateBuildImage() -> None:
         compile_logger.info("Building the docker image...")
         client.images.build(
             path=f"{Path.cwd()}",
-            dockerfile="Dockerfile",
+            dockerfile=Path.cwd().joinpath("docker/Dockerfile"),
             forcerm=True,
             pull=True,
             encoding="gzip",
@@ -87,5 +86,5 @@ def compileOD(codeText: str, timeout: int = 30) -> dict:
         return results
 
     results = {"compiler": parsed_logs["compiler"], "server": parsed_logs["server"], "timeout": test_killed}
-    compile_logger.debug(f"Run completed. Returning results:\n{results}")
+    compile_logger.debug(f"Returning results:\n{results}")
     return results
