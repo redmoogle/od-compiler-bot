@@ -11,7 +11,7 @@ WIP project. Not entirely organized just yet
 
 ## Install:
 
-Setup the python envrionment and install the required dependencies. If you have poetry, simply run `poetry install` within the base directory.
+Setup the python environment and install the required dependencies. If you have poetry, simply run `poetry install --only main` within the base directory.
 
 
 ## Running
@@ -27,3 +27,7 @@ Alternatively, you can start the application directly in developer debug mode wi
 ```
 python wsgi.py
 ```
+
+## Development
+
+Setup the python environment with `poetry install`, activate the environment with `poetry shell`, install the pre-commit hooks with `pre-commit install`
