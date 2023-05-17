@@ -38,8 +38,14 @@ def splitLogs(logs: str) -> dict:
         parsed['error'] = "Bad output"
         return parsed
 
-    parsed['compiler'] = matches.group(1)
-    parsed['server'] = matches.group(2)
+    compile_log = matches.group(1)
+    run_log = matches.group(2)
+
+    compile_log = (compile_log[:1200] + "...") if len(compile_log) > 1200 else compile_log
+    run_log = (run_log[:1200] + "...") if len(run_log) > 1200 else run_log
+
+    parsed['compiler'] = compile_log
+    parsed['server'] = run_log
 
     return parsed
 

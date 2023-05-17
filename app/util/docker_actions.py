@@ -69,7 +69,7 @@ def compileTest(codeText: str) -> dict:
 
     if "error" in parsed_logs.keys():
         results = {"error": 'Invalid output. Please check logs.', "timeout": test_killed}
-        compile_logger.warning(f"Failed to parse the log output:\n{logs}")
+        compile_logger.error(f"Failed to parse the log output:\n{logs}")
         return results
 
     results = {"compiler": parsed_logs['compiler'], "server": parsed_logs['server'], "timeout": test_killed}
