@@ -1,4 +1,3 @@
-import random
 import re
 import shutil
 import string
@@ -27,14 +26,6 @@ def cleanOldRuns(num_to_keep: int = 5) -> None:
     while len(runs) > num_to_keep:
         compile_logger.info(f"Cleanup deleting: {runs[0]}")
         shutil.rmtree(runs.pop(0))
-
-
-def randomString(stringLength=24) -> string:
-    """
-    Returns a random string containing 'stringLength' characters
-    """
-    letters = string.ascii_lowercase
-    return "".join(random.choice(letters) for i in range(stringLength))
 
 
 def splitLogs(logs: str, killed: bool = False) -> dict:

@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from time import sleep
 
@@ -5,7 +6,6 @@ import docker
 from app.util.compiler_logger import compile_logger
 from app.util.git_actions import updateOD
 from app.util.utilities import cleanOldRuns
-from app.util.utilities import randomString
 from app.util.utilities import splitLogs
 from app.util.utilities import stageBuild
 from app.util.utilities import writeOutput
@@ -48,7 +48,10 @@ def compileOD(codeText: str, timeout: int = 30) -> dict:
         results = {"build_error": True, "exception": str(e)}
         return results
 
-    randomDir = Path.cwd().joinpath(f"runs/{randomString()}")
+    timestamp = datetime.now()
+    timestamp = timestamp.strftime("%Y%m%d-%H.%M.%S.%f")
+    randomDir = Path.cwd().joinpath(f"runs/{timestamp}")
+
     stageBuild(codeText=codeText, dir=randomDir)
 
     compile_logger.info("Starting run...")
