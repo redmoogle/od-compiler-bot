@@ -104,3 +104,11 @@ def stageBuild(codeText: str, dir: Path) -> None:
             fc.write(loadTemplate(codeText))
         else:
             fc.write(loadTemplate(codeText, False))
+
+
+def writeOutput(logs: str, dir: Path) -> None:
+    """
+    Writes the log output into the run directory
+    """
+    with open(dir.joinpath("run_logs.txt"), "w") as rl:
+        rl.write(logs)

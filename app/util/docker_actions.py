@@ -8,6 +8,7 @@ from app.util.utilities import cleanOldRuns
 from app.util.utilities import randomString
 from app.util.utilities import splitLogs
 from app.util.utilities import stageBuild
+from app.util.utilities import writeOutput
 
 client = docker.from_env()
 
@@ -77,6 +78,7 @@ def compileOD(codeText: str, timeout: int = 30) -> dict:
     logs = container.logs().decode("utf-8")
     parsed_logs = splitLogs(logs=logs)
     container.remove(v=True, force=True)
+    writeOutput(logs=logs, dir=randomDir)
     cleanOldRuns()
     compile_logger.info("Run complete!")
 
