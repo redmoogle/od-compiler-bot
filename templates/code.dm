@@ -3,6 +3,7 @@
 $proc
 	$code
 /TEST/New()
-	world.log << "---------------"
+	world.log << "-------ODC-Start-------"
 	main()
+	world.log << "--------ODC-End--------"
 	shutdown()
