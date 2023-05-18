@@ -37,17 +37,24 @@ def randomString(stringLength=24) -> string:
     return "".join(random.choice(letters) for i in range(stringLength))
 
 
-def splitLogs(logs: str) -> dict:
+def splitLogs(logs: str, killed: bool = False) -> dict:
     """
     Split the container logs into compiler and server logs.
     Returns a dictionary containing 'compiler' and 'server' logs.
 
     logs: Docker container log output to be parsed
     """
-    logs_regex = re.compile(
-        r"---Start Compiler---(.+?)---End Compiler---.*---Start Server---(.+?)---End Server---",
-        re.MULTILINE | re.DOTALL,
-    )
+    if killed:
+        logs_regex = re.compile(
+            r"---Start Compiler---(.+?)---End Compiler---.*---Start Server---(.+)",
+            re.MULTILINE | re.DOTALL,
+        )
+    else:
+        logs_regex = re.compile(
+            r"---Start Compiler---(.+?)---End Compiler---.*---Start Server---(.+?)---End Server---",
+            re.MULTILINE | re.DOTALL,
+        )
+
     parsed = {}
 
     matches = logs_regex.search(logs)

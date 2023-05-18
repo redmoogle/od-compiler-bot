@@ -76,7 +76,7 @@ def compileOD(codeText: str, timeout: int = 30) -> dict:
 
     # Container logs are byte encoded
     logs = container.logs().decode("utf-8")
-    parsed_logs = splitLogs(logs=logs)
+    parsed_logs = splitLogs(logs=logs, killed=test_killed)
     container.remove(v=True, force=True)
     writeOutput(logs=logs, dir=randomDir)
     cleanOldRuns()
