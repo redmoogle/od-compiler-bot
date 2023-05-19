@@ -1,9 +1,9 @@
 /var/TEST/aaaaaa=new
 
 $proc
-	$code
+  $code
 /TEST/New()
-	world.log << "-------ODC-Start-------"
-	main()
-	world.log << "--------ODC-End--------"
-	shutdown()
+  world.log << "-------ODC-Start-------"
+  main()
+  world.log << "--------ODC-End--------"
+  shutdown()

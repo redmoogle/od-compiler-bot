@@ -1,0 +1,13 @@
+#Normalize files
+* text=auto
+
+*.json text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.txt text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.dm text eol=lf
+*.toml text eol=lf
+*.dmm text eol=lf
+*.dme text eol=lf

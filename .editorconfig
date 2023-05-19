@@ -11,3 +11,7 @@ indent_size = 2
 
 [*.py]
 indent_style = space
+
+[*{.dm,.dmm,.dme}]
+indent_size = 2
+indent_style = space
