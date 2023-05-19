@@ -8,10 +8,15 @@ from app.util.compiler_logger import compile_logger
 OD_REPO_PATH = Path.cwd().joinpath("OpenDream")
 
 
-def updateOD() -> None:
+def updateOD(clean: int = False) -> None:
     """
     Update the OpenDream repository if it exists. If it doesn't, clone a fresh copy.
     """
+    if clean:
+        from shutil import rmtree
+
+        rmtree(OD_REPO_PATH)
+
     if Path.exists(OD_REPO_PATH):
         od = Repo(OD_REPO_PATH)
         od.remote().fetch()

@@ -2,6 +2,8 @@ from datetime import datetime
 from pathlib import Path
 from time import sleep
 
+from gitdb.exc import BadName
+
 import docker
 from app.util.compiler_logger import compile_logger
 from app.util.git_actions import updateOD
@@ -19,17 +21,19 @@ def updateBuildImage() -> None:
     """
     try:
         updateOD()
-        compile_logger.info("Building the docker image...")
-        client.images.build(
-            path=f"{Path.cwd()}",
-            dockerfile=Path.cwd().joinpath("docker/Dockerfile"),
-            forcerm=True,
-            pull=True,
-            encoding="gzip",
-            tag="od-compiler:latest",
-        )
-    except docker.errors.BuildError:
-        raise
+    except BadName:
+        compile_logger.warning("There was an error updating the repo. Cleaning up and trying again.")
+        updateOD(clean=True)
+
+    compile_logger.info("Building the docker image...")
+    client.images.build(
+        path=f"{Path.cwd()}",
+        dockerfile=Path.cwd().joinpath("docker/Dockerfile"),
+        forcerm=True,
+        pull=True,
+        encoding="gzip",
+        tag="od-compiler:latest",
+    )
 
 
 def compileOD(codeText: str, compile_args: list, timeout: int = 30) -> dict:
