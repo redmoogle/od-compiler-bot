@@ -32,7 +32,7 @@ def updateBuildImage() -> None:
         raise
 
 
-def compileOD(codeText: str, timeout: int = 30) -> dict:
+def compileOD(codeText: str, compile_args: list, timeout: int = 30) -> dict:
     """
     Create an OpenDream docker container to compile and run arbitrary code.
     Returns A dictionary containing the compiler and server logs.
@@ -60,6 +60,7 @@ def compileOD(codeText: str, timeout: int = 30) -> dict:
         detach=True,
         network_disabled=True,
         volumes=[f"{randomDir}:/app/code:ro"],
+        command=compile_args,
     )
 
     stop_time = 3

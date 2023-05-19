@@ -31,7 +31,8 @@ def startCompile() -> Flask.response_class:
         compile_logger.debug(f"Request incoming containing: {posted_data}")
         if "code_to_compile" in posted_data:
             compile_logger.info("Request recieved. Attempting to compile...")
-            return jsonify(compileOD(posted_data["code_to_compile"]))
+            args = posted_data["extra_arguments"] if "extra_arguments" in posted_data else None
+            return jsonify(compileOD(posted_data["code_to_compile"], compile_args=args))
         else:
             compile_logger.warning(f"Bad request recieved:\n{request.get_json()}")
             abort(400)
