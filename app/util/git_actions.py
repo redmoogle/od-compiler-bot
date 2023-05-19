@@ -34,7 +34,7 @@ def updateOD(clean: int = False) -> None:
 
 def updateSubmodules(od_repo: Repo) -> None:
     """
-    Recursively update and initilize submodules
+    Recursively update and initialize submodules
 
     od_repo: OpenDream repository with the submodules
     """
