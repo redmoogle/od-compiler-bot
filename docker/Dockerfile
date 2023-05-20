@@ -15,6 +15,9 @@ WORKDIR /app
 COPY docker/run.sh .
 
 RUN useradd odcompile && \
-    chown -R odcompile: /app
+    chown -R odcompile: /app && \
+	chown -R odcompile: /opendream/bin
+
+USER odcompile
 
 ENTRYPOINT [ "/bin/bash", "/app/run.sh" ]
