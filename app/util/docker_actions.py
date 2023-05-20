@@ -65,6 +65,7 @@ def compileOD(codeText: str, compile_args: list, timeout: int = 30) -> dict:
         network_disabled=True,
         volumes=[f"{randomDir}:/app/code:ro"],
         command=compile_args,
+        cgroup_parent="od_compiler.slice",
     )
 
     stop_time = 3
