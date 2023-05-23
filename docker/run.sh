@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 cp /app/code/* .
 echo "---Preamble---"
 echo Included compiler arguments: "$@"
