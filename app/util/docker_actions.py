@@ -34,6 +34,7 @@ def updateBuildImage() -> None:
         encoding="gzip",
         tag="od-compiler:latest",
     )
+    client.images.prune()
 
 
 def compileOD(codeText: str, compile_args: list, timeout: int = 30) -> dict:
