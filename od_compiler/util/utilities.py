@@ -4,22 +4,21 @@ import string
 from os.path import getctime
 from pathlib import Path
 
-from app.util.compiler_logger import compile_logger
+from od_compiler.util.compiler_logger import compile_logger
 
-MAIN_PROC = "proc/main()"
+MAIN_PROC = "/proc/main()"
 CODE_FILE = Path.cwd().joinpath("templates/code.dm")
 TEST_DME = Path.cwd().joinpath("templates/test.dme")
 MAP_FILE = Path.cwd().joinpath("templates/map.dmm")
 OD_CONF = Path.cwd().joinpath("templates/server_config.toml")
 
 
-def cleanOldRuns(num_to_keep: int = 5) -> None:
+def cleanOldRuns(run_dir: Path, num_to_keep: int = 5) -> None:
     """
     Remove the oldest runs, keeping the n most recent runs.
 
     num_to_keep: Number of historic runs that should be maintained
     """
-    run_dir = Path.cwd().joinpath("runs")
     runs = [x for x in run_dir.iterdir() if x.is_dir()]
     runs.sort(key=getctime)
 
@@ -28,12 +27,13 @@ def cleanOldRuns(num_to_keep: int = 5) -> None:
         shutil.rmtree(runs.pop(0))
 
 
-def splitLogs(logs: str, killed: bool = False) -> dict:
+def splitLogs(logs: str, killed: bool = False) -> dict[str, str]:
     """
     Split the container logs into compiler and server logs.
     Returns a dictionary containing 'compiler' and 'server' logs.
 
     logs: Docker container log output to be parsed
+    killed: Boolean indicating if the run was killed early or not
     """
     if killed:
         logs_regex = re.compile(
@@ -66,7 +66,7 @@ def splitLogs(logs: str, killed: bool = False) -> dict:
     return parsed
 
 
-def loadTemplate(line: str, includeProc=True) -> string:
+def loadTemplate(line: str, includeProc=True) -> str:
     """
     Replaces the placeholder lines within the template file with the provided run-code.
     Returns a template string which can be written to a run file.
@@ -79,7 +79,7 @@ def loadTemplate(line: str, includeProc=True) -> string:
 
     if includeProc:
         line = "\n\t".join(line.splitlines())
-        d = {"proc": MAIN_PROC, "code": f"{line}\n"}
+        d = {"proc": MAIN_PROC, "code": f"\t{line}\n"}
     else:
         d = {"proc": line, "code": ""}
 
@@ -88,12 +88,12 @@ def loadTemplate(line: str, includeProc=True) -> string:
 
 def stageBuild(codeText: str, dir: Path) -> None:
     """
-    Create a directory for the current run and copy over the needed files. Creates the run file containing provided arbitrary code.
+    Create a directory for the current run and copy over the needed files.
+    Creates the run file containing provided arbitrary code.
 
     codeText: Arbitrary code to be loaded into a template file
     dir: Run directory that'll house all of the needed files
     """
-    dir.mkdir(parents=True)
     shutil.copyfile(TEST_DME, dir.joinpath("test.dme"))
     shutil.copyfile(MAP_FILE, dir.joinpath("map.dmm"))
     shutil.copyfile(OD_CONF, dir.joinpath("server_config.toml"))

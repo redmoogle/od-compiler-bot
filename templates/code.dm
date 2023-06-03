@@ -1,7 +1,7 @@
 /var/TEST/aaaaaa=new
 
 $proc
-  $code
+$code
 /TEST/New()
   world.log << "-------ODC-Start-------"
   main()

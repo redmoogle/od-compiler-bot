@@ -1,3 +1,5 @@
+[![CI](https://github.com/OpenDreamProject/od-compiler-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenDreamProject/od-compiler-bot/actions/workflows/ci.yml)
+
 ## Requirements:
 
 1. Python 3.11
@@ -9,7 +11,7 @@
 
 A simple bot that takes arbitrary code and compiles/executes it within a Docker sandbox environment. The Docker containers lack network, compile/execute code as an unprivileged user, only have access to a read-only volume, and self destruct after 30-seconds. It is recommended that you pair this with a frontend, such as the Discord RedBot cog found here: https://github.com/OpenDreamProject/od-cogs
 
-Whenever the OpenDream repository is updated, the server will build an updated Docker image on the next request. This garuntees that the code is always running on the latest version, but, it can also take a few minutes depending on your network speed and hardware. 
+Whenever the OpenDream repository is updated, the server will build an updated Docker image on the next request. This garuntees that the code is always running on the latest version, but, it can also take a few minutes depending on your network speed and hardware.
 
 ## Install:
 

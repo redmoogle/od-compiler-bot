@@ -4,26 +4,28 @@ from time import sleep
 
 from gitdb.exc import BadName
 
-import docker
-from app.util.compiler_logger import compile_logger
-from app.util.git_actions import updateOD
-from app.util.utilities import cleanOldRuns
-from app.util.utilities import splitLogs
-from app.util.utilities import stageBuild
-from app.util.utilities import writeOutput
+from docker.client import from_env as docker_from_env
+from docker.errors import BuildError
+from od_compiler.util.compiler_logger import compile_logger
+from od_compiler.util.git_actions import updateOD
+from od_compiler.util.utilities import cleanOldRuns
+from od_compiler.util.utilities import splitLogs
+from od_compiler.util.utilities import stageBuild
+from od_compiler.util.utilities import writeOutput
 
-client = docker.from_env()
+client = docker_from_env()
 
 
 def updateBuildImage() -> None:
     """
     Update OpenDream and then use Docker's build context to see if we need to build a new image.
     """
+    od_path = Path.cwd().joinpath("OpenDream")
     try:
-        updateOD()
+        updateOD(od_repo_path=od_path)
     except BadName:
         compile_logger.warning("There was an error updating the repo. Cleaning up and trying again.")
-        updateOD(clean=True)
+        updateOD(od_repo_path=od_path, clean=True)
 
     compile_logger.info("Building the docker image...")
     client.images.build(
@@ -37,7 +39,7 @@ def updateBuildImage() -> None:
     client.images.prune(filters={"dangling": True})
 
 
-def compileOD(codeText: str, compile_args: list, timeout: int = 30) -> dict:
+def compileOD(codeText: str, compile_args: list[str], timeout: int = 30) -> dict[str, object]:
     """
     Create an OpenDream docker container to compile and run arbitrary code.
     Returns A dictionary containing the compiler and server logs.
@@ -49,13 +51,13 @@ def compileOD(codeText: str, compile_args: list, timeout: int = 30) -> dict:
     """
     try:
         updateBuildImage()
-    except docker.errors.BuildError as e:
+    except BuildError as e:
         results = {"build_error": True, "exception": str(e)}
         return results
 
-    timestamp = datetime.now()
-    timestamp = timestamp.strftime("%Y%m%d-%H.%M.%S.%f")
+    timestamp = datetime.now().strftime("%Y%m%d-%H.%M.%S.%f")
     randomDir = Path.cwd().joinpath(f"runs/{timestamp}")
+    randomDir.mkdir(parents=True)
 
     stageBuild(codeText=codeText, dir=randomDir)
 
@@ -89,7 +91,7 @@ def compileOD(codeText: str, compile_args: list, timeout: int = 30) -> dict:
     parsed_logs = splitLogs(logs=logs, killed=test_killed)
     container.remove(v=True, force=True)
     writeOutput(logs=logs, dir=randomDir)
-    cleanOldRuns()
+    cleanOldRuns(run_dir=Path.cwd().joinpath("runs"))
     compile_logger.info("Run complete!")
 
     if "error" in parsed_logs.keys():

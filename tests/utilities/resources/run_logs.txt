@@ -1,0 +1,27 @@
+---Preamble---
+Included compiler arguments: --version=123.456
+---Start Compiler---
+Compiling test.dme on 123.456
+Compilation succeeded with 0 warnings
+Saved to test.json
+Total time: 00:00
+---End Compiler---
+---Start Server---
+[INFO] root: Server -> Starting
+[INFO] cfg: Configuration Loaded from '/app/server_config.toml'
+[INFO] srv: Name: MyServer
+[INFO] srv: TickRate: 20(50.00ms)
+[INFO] srv: Max players: 256
+[INFO] szr: Serializer Types Hash: 646D4DAD73368EA2079DBA568D6A81E8655856F72AB67972CB87E591551562AA
+[INFO] game: Tickrate changed to: 10 on tick 1
+[INFO] map: Creating new map 1
+[INFO] world.log: -------ODC-Start-------
+[INFO] world.log: Hello!
+[INFO] world.log: --------ODC-End--------
+[INFO] root: Server Version 0.96.8.2 -> Ready
+[INFO] net: "127.0.0.1": "Socket bound to 127.0.0.1:25566: True"
+[INFO] net: "127.0.0.1": "Network thread started"
+[INFO] srv: shutdown() was called from DM code, shutting down...
+[INFO] map: Deleting map 1
+[INFO] root: Goodbye.
+---End Server---
