@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from od_compiler.util.utilities import splitLogs
 from od_compiler.util.utilities import writeOutput
 

@@ -1,9 +1,9 @@
 from os import chdir
 
 import pytest
+from od_compiler.util.docker_actions import compileOD
 
 from docker.errors import BuildError
-from od_compiler.util.docker_actions import compileOD
 
 
 @pytest.mark.order(index=-1)

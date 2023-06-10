@@ -1,5 +1,4 @@
 import pytest
-
 from od_compiler.util.git_actions import updateOD
 
 

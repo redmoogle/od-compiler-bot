@@ -1,9 +1,8 @@
 from logging import DEBUG
 from logging import getLogger
 
-from werkzeug.middleware.proxy_fix import ProxyFix
-
 from od_compiler import create_app
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 def main():

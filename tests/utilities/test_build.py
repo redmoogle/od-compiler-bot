@@ -1,7 +1,7 @@
 import pytest
-
 from od_compiler.util.utilities import cleanOldRuns
 from od_compiler.util.utilities import stageBuild
+
 from tests.utilities import runs_list
 
 

@@ -3,7 +3,6 @@ from logging import CRITICAL
 
 import pytest
 from flask.testing import FlaskClient
-
 from od_compiler import create_app
 
 
