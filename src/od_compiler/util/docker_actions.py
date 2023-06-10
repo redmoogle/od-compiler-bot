@@ -3,15 +3,15 @@ from pathlib import Path
 from time import sleep
 
 from gitdb.exc import BadName
-
-from docker.client import from_env as docker_from_env
-from docker.errors import BuildError
 from od_compiler.util.compiler_logger import compile_logger
 from od_compiler.util.git_actions import updateOD
 from od_compiler.util.utilities import cleanOldRuns
 from od_compiler.util.utilities import splitLogs
 from od_compiler.util.utilities import stageBuild
 from od_compiler.util.utilities import writeOutput
+
+from docker.client import from_env as docker_from_env
+from docker.errors import BuildError
 
 client = docker_from_env()
 

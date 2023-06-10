@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from git.repo import Repo
-
 from od_compiler.util.compiler_logger import compile_logger
 
 

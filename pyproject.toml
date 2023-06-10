@@ -7,7 +7,7 @@ maintainers = ["Crossedfall <ping@crossedfall.io>"]
 readme = "README.md"
 license = "MIT"
 repository = "https://github.com/OpenDreamProject/od-compiler-bot"
-packages = [{include = "od_compiler"}]
+packages = [{include = "od_compiler", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -48,9 +48,8 @@ quiet = 3
 
 [tool.pytest.ini_options]
 addopts = "--cov=od_compiler -p no:legacypath"
-testpaths = [
-	"tests",
-]
+testpaths = ["tests"]
+pythonpath = ["src"]
 
 [tool.mypy]
 mypy_path = "od_compiler"
