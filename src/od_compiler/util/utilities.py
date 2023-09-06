@@ -57,9 +57,6 @@ def splitLogs(logs: str, killed: bool = False) -> dict[str, str]:
     compile_log = matches.group(1)
     run_log = matches.group(2)
 
-    compile_log = (compile_log[:1200] + "...") if len(compile_log) > 1200 else compile_log
-    run_log = (run_log[:1200] + "...") if len(run_log) > 1200 else run_log
-
     parsed["compiler"] = compile_log
     parsed["server"] = run_log
 
