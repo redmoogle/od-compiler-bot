@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: bf7a162
+    rev: e877371
     hooks:
       - id: black
 
@@ -15,24 +15,24 @@ repos:
         language_version: python3
 
   - repo: https://github.com/PyCQA/flake8
-    rev: b9a7794
+    rev: 7ef0350
     hooks:
       - id: flake8
         language_version: python3
 
   - repo: https://github.com/asottile/reorder-python-imports
-    rev: b5d69d1
+    rev: ba4e0d3
     hooks:
       - id: reorder-python-imports
 
   - repo: https://github.com/codespell-project/codespell
-    rev: ec0f41b
+    rev: 355e50e
     hooks:
-    - id: codespell
-      additional_dependencies:
-      - tomli
+      - id: codespell
+        additional_dependencies:
+          - tomli
 
-  -   repo: https://github.com/pre-commit/mirrors-mypy
-      rev: bd424e4
-      hooks:
-      -   id: mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 08cbc46
+    hooks:
+      - id: mypy
