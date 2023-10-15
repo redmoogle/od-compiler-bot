@@ -6,7 +6,7 @@ COPY ./OpenDream/ .
 
 RUN dotnet build OpenDreamServer && \
 	dotnet build DMCompiler && \
-    ln -s /opendream/DMCompiler/bin/Debug/net7.0/DMCompiler /usr/bin/ && \
+    ln -s /opendream/bin/DMCompiler/DMCompiler /usr/bin/ && \
     ln -s /opendream/bin/Content.Server/OpenDreamServer /usr/bin
 
 FROM builder
