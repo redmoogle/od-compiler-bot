@@ -1,3 +1,5 @@
+from importlib.metadata import version
+
 from flask import abort
 from flask import Blueprint
 from flask import Flask
@@ -6,6 +8,8 @@ from flask import request
 from flask import Response
 from od_compiler.util.compiler_logger import compile_logger
 from od_compiler.util.docker_actions import compileOD
+
+__version__ = version("od-compiler")
 
 compile = Blueprint("compile", __name__, url_prefix="/")
 
@@ -36,3 +40,11 @@ def startCompile() -> Response:
     else:
         compile_logger.warning(f"Bad request received:\n{request.get_json()}")
         return abort(400)
+
+
+@compile.route("/version", methods=["GET"])
+def getVersion() -> Response:
+    """
+    Returns the current version of the compiler server
+    """
+    return jsonify({"version": __version__})  # Could expand this to give the revisions from OD
