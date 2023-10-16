@@ -11,7 +11,7 @@ def test_standard_compile(build_dir):
     code = 'world.log << "Hello, pytest!"'
 
     chdir(build_dir)
-    test_output = compileOD(codeText=code, compile_args=[""], timeout=30)
+    test_output = compileOD(codeText=code, compile_args=[""], build_config="Release", timeout=30)
     assert test_output.keys() >= {"compiler", "server", "timeout"}
 
 
@@ -26,7 +26,7 @@ def test_complex_compile(build_dir):
 """
 
     chdir(build_dir)
-    test_output = compileOD(codeText=code, compile_args=[""], timeout=30)
+    test_output = compileOD(codeText=code, compile_args=[""], build_config="Release", timeout=30)
     assert test_output.keys() >= {"compiler", "server", "timeout"}
 
 
@@ -38,7 +38,7 @@ def test_build_error(build_dir, mocker):
     code = 'world.log << "Hello, pytest!"'
 
     chdir(build_dir)
-    test_output = compileOD(codeText=code, compile_args=[""], timeout=30)
+    test_output = compileOD(codeText=code, compile_args=[""], build_config="Release", timeout=30)
     assert "build_error" in test_output.keys()
 
 
@@ -47,7 +47,7 @@ def test_compile_timeout(build_dir):
     code = 'world.log << "Sleeping"\nsleep(500)'
 
     chdir(build_dir)
-    test_output = compileOD(codeText=code, compile_args=[""], timeout=5)
+    test_output = compileOD(codeText=code, compile_args=[""], build_config="Release", timeout=5)
     assert test_output["timeout"] is True
 
 
@@ -58,6 +58,6 @@ def test_compile_bad_logs(build_dir, mocker):
 
     chdir(build_dir)
     code = 'world.log << "Hello, pytest!"'
-    test_output = compileOD(codeText=code, compile_args=[""], timeout=30)
+    test_output = compileOD(codeText=code, compile_args=[""], build_config="Release", timeout=30)
 
     assert "error" in test_output.keys()

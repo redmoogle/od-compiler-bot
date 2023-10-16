@@ -4,8 +4,10 @@ WORKDIR /opendream
 
 COPY ./OpenDream/ .
 
-RUN dotnet build OpenDreamServer && \
-	dotnet build DMCompiler && \
+ARG BULD_CONFIG=Release
+
+RUN dotnet build OpenDreamServer --configuration ${BULD_CONFIG} && \
+	dotnet build DMCompiler --configuration ${BULD_CONFIG} && \
     ln -s /opendream/bin/DMCompiler/DMCompiler /usr/bin/ && \
     ln -s /opendream/bin/Content.Server/OpenDreamServer /usr/bin
 
