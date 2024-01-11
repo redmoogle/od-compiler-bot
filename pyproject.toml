@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "od-compiler"
-version = "0.3.1"
+version = "0.3.2"
 description = "OpenDream compiler listener"
 authors = ["Crossedfall <ping@crossedfall.io>"]
 maintainers = ["Crossedfall <ping@crossedfall.io>"]
