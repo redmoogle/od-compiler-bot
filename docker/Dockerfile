@@ -6,9 +6,15 @@ COPY ./OpenDream/ .
 
 ARG BULD_CONFIG=Release
 
-RUN dotnet build OpenDreamServer --configuration ${BULD_CONFIG} && \
-	dotnet build DMCompiler --configuration ${BULD_CONFIG} && \
-    ln -s /opendream/bin/DMCompiler/DMCompiler /usr/bin/ && \
+ARG TAR_URL=https://github.com/OpenDreamProject/OpenDream/releases/tag/latest
+
+RUN apk add --no-cache wget tar
+
+RUN wget $TAR_URL -O binaries.tar.gz && \
+    tar -xzf binaries.tar.gz --strip-components=1 && \
+    rm binaries.tar.gz
+
+RUN ln -s /opendream/bin/DMCompiler/DMCompiler /usr/bin/ && \
     ln -s /opendream/bin/Content.Server/OpenDreamServer /usr/bin
 
 FROM builder
